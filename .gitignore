@@ -1,0 +1,10 @@
+# builds
+dist/
+
+
+# node dependencies
+node_modules/
+
+# environment
+.env
+.env.prod
