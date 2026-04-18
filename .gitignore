@@ -1,10 +1,12 @@
 # builds
 dist/
 
-
 # node dependencies
 node_modules/
 
 # environment
 .env
 .env.prod
+
+# database directory wirh .sql file
+db/
