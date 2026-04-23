@@ -1,11 +1,14 @@
 import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { assert } from 'node:console';
+import { type User } from '../schema';
+
+type UserRole = NonNullable<User['role']>;
 
 export type AuthTokenPayload = {
     sub: string;
     email: string;
     username?: string;
-    role?: string;
+    role?: UserRole;
 };
 
 const getJwtSecret = (): string => {
@@ -43,6 +46,6 @@ export const verifyAccessToken = (token: string): AuthTokenPayload => {
         sub: String(decoded.sub),
         email: String(decoded.email),
         username: decoded.username,
-        role: decoded.role,
+        role: decoded.role as UserRole | undefined,
     };
 };

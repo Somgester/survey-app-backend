@@ -8,5 +8,5 @@ node_modules/
 .env
 .env.prod
 
-# database directory wirh .sql file
-db/
+# database directory with .sql file
+db_query/
