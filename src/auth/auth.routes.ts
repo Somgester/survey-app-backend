@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { ZodError } from 'zod';
 import { loginRequestSchema, registerRequestSchema } from './schema/auth.schema';
 import { requireAuth, AuthedRequest } from './auth.middleware';
 import { signAccessToken } from './jwt';
 import { createUser, findUserByEmail, verifyUserPassword } from './user.repository';
 
 const router = Router();
+const deriveUsernameFromEmail = (email: string): string => email.split('@')[0];
 
 router.post('/register', async (req: Request, res: Response) => {
     const parsed = registerRequestSchema.safeParse(req.body);
@@ -14,7 +16,8 @@ router.post('/register', async (req: Request, res: Response) => {
         return;
     }
 
-    const { username, email, password } = parsed.data;
+    const { username: providedUsername, email, password, role } = parsed.data;
+    const username = providedUsername ?? deriveUsernameFromEmail(email);
 
     const existingUser = await findUserByEmail(email);
 
@@ -23,7 +26,18 @@ router.post('/register', async (req: Request, res: Response) => {
         return;
     }
 
-    const user = await createUser({ username, email, password });
+    let user;
+
+    try {
+        user = await createUser({ username, email, password, role });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            res.status(400).json({ error: 'Invalid request body', issues: error.flatten() });
+            return;
+        }
+
+        throw error;
+    }
 
     res.status(201).json({
         message: `User registered successfully with ${user.email}`,

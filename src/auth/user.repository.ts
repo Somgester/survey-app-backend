@@ -1,12 +1,16 @@
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 import { pool } from '../db';
+import { userSchema, type User } from '../schema';
+
+type UserRole = NonNullable<User['role']>;
 
 export type DbUser = {
     id: string;
     username: string;
     email: string;
     password_hash: string;
-    role: string;
+    role: UserRole;
     created_at: string;
     updated_at: string;
 };
@@ -15,10 +19,17 @@ export type PublicUser = {
     id: string;
     username: string;
     email: string;
-    role: string;
+    role: UserRole;
     created_at: string;
     updated_at: string;
 };
+
+const createUserParamsSchema = userSchema
+    .pick({ username: true, email: true })
+    .extend({
+        password: z.string().min(1),
+        role: userSchema.shape.role.unwrap().default('creator'),
+    });
 
 const mapUser = (user: DbUser): PublicUser => ({
     id: user.id,
@@ -45,14 +56,15 @@ export const createUser = async (params: {
     username: string;
     email: string;
     password: string;
-    role?: string;
+    role?: UserRole;
 }): Promise<PublicUser> => {
-    const passwordHash = await bcrypt.hash(params.password, 10);
+    const parsedParams = createUserParamsSchema.parse(params);
+    const passwordHash = await bcrypt.hash(parsedParams.password, 10);
     const result = await pool.query<DbUser>(
         `INSERT INTO users (username, email, password_hash, role)
          VALUES ($1, $2, $3, $4)
          RETURNING id, username, email, password_hash, role, created_at, updated_at`,
-        [params.username, params.email, passwordHash, params.role || 'user']
+        [parsedParams.username, parsedParams.email, passwordHash, parsedParams.role]
     );
 
     return mapUser(result.rows[0]);

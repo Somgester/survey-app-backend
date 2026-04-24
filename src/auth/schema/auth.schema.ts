@@ -1,9 +1,13 @@
 import { z } from 'zod';
+import { userSchema } from '../../schema';
+
+const userRoleSchema = userSchema.shape.role.unwrap();
 
 export const registerRequestSchema = z.object({
-    username: z.string().min(3).max(20),
+    username: z.string().trim().min(3).max(20).optional(),
     email: z.email(),
     password: z.string().min(8).max(128),
+    role: userRoleSchema.optional(),
 });
 
 export const loginRequestSchema = z.object({
